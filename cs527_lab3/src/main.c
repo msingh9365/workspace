@@ -11,18 +11,20 @@ int main(void)
 {
 	Device dev;
 	device_init(&dev, 0x00);
+	Bus bus;
+	bus_init(&bus, &dev);
 
 	uint8_t addr = 10; // example 7-bit address
 	uint8_t to_write[4] = { 0xDE, 0xAD, 0xBE, 0xEF };
 	uint8_t read_back[4] = { 0 };
 
-	int rc = app_write_4bytes(&dev, addr, to_write);
+	int rc = app_write_4bytes(&bus, addr, to_write);
 	if (rc != 0) {
 		printf("Write failed with code %d\n", rc);
 		return 1;
 	}
 
-	rc = app_read_4bytes(&dev, addr, read_back);
+	rc = app_read_4bytes(&bus, addr, read_back);
 	if (rc != 0) {
 		printf("Read failed with code %d\n", rc);
 		return 1;
