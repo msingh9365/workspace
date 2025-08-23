@@ -2,26 +2,19 @@
 #define BUS_H
 
 #include "common.h"
+#include "slave.h"
 
-// Simple Slave device
-typedef struct {
-	int id;
-	uint8_t *memory; // 4096 bytes
-} slave_device_t;
-
-// Single-threaded bus containing an array of slaves
 typedef struct {
 	int num_slaves;
-	slave_device_t slaves[MAX_SLAVES];
+	slave_t slaves[MAX_SLAVES];
 } bus_t;
 
 int bus_init(bus_t *bus, int num_slaves);
 void bus_destroy(bus_t *bus);
 
-// Synchronous operations initiated by master
-// Returns 0 on success, negative on error
-int bus_write(bus_t *bus, int slave_id, uint32_t address, const uint8_t *data, uint32_t length);
-int bus_read(bus_t *bus, int slave_id, uint32_t address, uint8_t *out, uint32_t length);
-int bus_shutdown(bus_t *bus); // no-op in single-threaded version
+// Transfer a frame from master to the addressed slave and optionally return data
+// For OP_READ, out_buf must be at least hdr->length bytes; ignored for writes
+int bus_transfer(bus_t *bus, const frame_header_t *hdr, const uint8_t *payload,
+		uint8_t *out_buf);
 
 #endif // BUS_H

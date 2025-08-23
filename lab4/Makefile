@@ -6,7 +6,7 @@ TARGET := $(BUILD_DIR)/lab4_demo
 
 .DEFAULT_GOAL := all
 
-SOURCES := $(SRC_DIR)/bus.c $(SRC_DIR)/master.c
+SOURCES := $(SRC_DIR)/slave.c $(SRC_DIR)/bus.c $(SRC_DIR)/master.c
 OBJECTS := $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
 
 $(BUILD_DIR):
