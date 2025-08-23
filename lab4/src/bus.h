@@ -3,40 +3,25 @@
 
 #include "common.h"
 
-typedef struct slave_device slave_device_t;
-
+// Simple Slave device
 typedef struct {
-	pthread_mutex_t mutex;
-	pthread_cond_t req_ready;
-	pthread_cond_t resp_ready;
-	int has_request;
-	int has_response;
-	request_t *req;
-	response_t *resp;
-} mailbox_t;
+	int id;
+	uint8_t *memory; // 4096 bytes
+} slave_device_t;
 
+// Single-threaded bus containing an array of slaves
 typedef struct {
 	int num_slaves;
-	slave_device_t *slaves[MAX_SLAVES];
-	mailbox_t mbox[MAX_SLAVES];
+	slave_device_t slaves[MAX_SLAVES];
 } bus_t;
 
 int bus_init(bus_t *bus, int num_slaves);
 void bus_destroy(bus_t *bus);
 
-// Master-side synchronous helper
-int bus_send_and_wait(bus_t *bus, request_t *req, response_t **out_resp);
-
-// Slave device API
-struct slave_device {
-	int id;
-	pthread_t thread;
-	uint8_t *memory;
-	bus_t *bus;
-	int running;
-};
-
-int slave_start(bus_t *bus, int id);
-void slave_join_and_free(slave_device_t *dev);
+// Synchronous operations initiated by master
+// Returns 0 on success, negative on error
+int bus_write(bus_t *bus, int slave_id, uint32_t address, const uint8_t *data, uint32_t length);
+int bus_read(bus_t *bus, int slave_id, uint32_t address, uint8_t *out, uint32_t length);
+int bus_shutdown(bus_t *bus); // no-op in single-threaded version
 
 #endif // BUS_H
