@@ -19,9 +19,7 @@ typedef struct {
 	uint8_t op;          // op_t
 	uint16_t length;     // number of data bytes
 	uint32_t address;    // byte offset
-	// Followed by 'length' bytes of payload for write
-	// For read, payload length is 0
-	uint8_t checksum;    // simple XOR over header and payload
+	uint16_t crc16;      // CRC-16-CCITT over fields above and payload
 } frame_header_t;
 
 #endif // COMMON_H
