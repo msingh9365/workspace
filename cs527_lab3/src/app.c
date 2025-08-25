@@ -2,6 +2,12 @@
 #include "protocol.h"
 #include <stdio.h>
 
+static void app_store_byte_cb(size_t index0to3, uint8_t data_byte, void *user_ctx)
+{
+	uint8_t *buf = (uint8_t*)user_ctx;
+	buf[index0to3] = data_byte;
+}
+
 static int app_start_and_address(Bus *bus, uint8_t address7)
 {
 	// Step 1-2: start then ack
@@ -46,16 +52,16 @@ int app_write_4bytes(Bus *bus, uint8_t address7, const uint8_t data[4])
 	return 0;
 }
 
-int app_read_4bytes(Bus *bus, uint8_t address7, uint8_t out_data[4])
+int app_read_4bytes_cb(Bus *bus, uint8_t address7, app_read_byte_cb cb, void *user_ctx)
 {
-	if (!bus || !out_data) return -10;
+	if (!bus || !cb) return -10;
 	int rc = app_start_and_address(bus, address7);
 	if (rc != 0) return rc;
 
 	// Step 6: send read request (1 for read)
 	bus_send_rw(bus, true);
 
-	// Steps 7-11: receive 4 bytes; verify parity; send ack/nack
+	// Steps 7-11: receive 4 bytes; verify parity; ack/nack via retry, invoke cb
 	for (size_t i = 0; i < 4; ++i) {
 		int attempts = 0;
 		for (;;) {
@@ -64,14 +70,18 @@ int app_read_4bytes(Bus *bus, uint8_t address7, uint8_t out_data[4])
 			uint8_t expected = protocol_even_parity_bit_u8(data_byte);
 			bool ok = (expected == (parity & 0x1U));
 			if (ok) {
-				// Application returns ack to device; in this simulation we simply accept and move on
-				out_data[i] = data_byte;
+				cb(i, data_byte, user_ctx);
 				break;
 			}
-			// Parity mismatch -> application would send nack; device resends on next iteration
 			attempts++;
-			if (attempts >= 5) return -4; // too many failures
+			if (attempts >= 5) return -4;
 		}
 	}
 	return 0;
+}
+
+int app_read_4bytes(Bus *bus, uint8_t address7, uint8_t out_data[4])
+{
+	if (!bus || !out_data) return -10;
+	return app_read_4bytes_cb(bus, address7, app_store_byte_cb, out_data);
 }
